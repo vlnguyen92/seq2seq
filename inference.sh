@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Set this to where you extracted the downloaded file
-export DATA_PATH=/scratch/wellman_fluxg/lvnguyen/seq2seq/data
+#export DATA_PATH=/scratch/wellman_fluxg/lvnguyen/seq2seq/data
+export DATA_PATH=./data
 
 export VOCAB_SOURCE=${DATA_PATH}/vocab.bpe.32000
 export VOCAB_TARGET=${DATA_PATH}/vocab.bpe.32000
@@ -13,8 +14,11 @@ export DEV_TARGETS=${DATA_PATH}/newstest2013.tok.bpe.32000.en
 export DEV_TARGETS_REF=${DATA_PATH}/newstest2013.tok.en
 export TRAIN_STEPS=50000
 
-export MODEL_DIR=${TMPDIR:-/scratch/wellman_fluxg/lvnguyen/seq2seq/trained_models}/nmt_tutorial
+export MODEL_DIR=${TMPDIR:-./trained_models}/nmt_tutorial
 mkdir -p $MODEL_DIR
+
+export PRED_DIR=${MODEL_DIR}/pred
+mkdir -p ${PRED_DIR}
 
 python -m bin.infer \
   --tasks "
