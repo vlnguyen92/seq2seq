@@ -178,7 +178,9 @@ class BleuMetricSpec(TextMetricSpec):
     super(BleuMetricSpec, self).__init__(params, "bleu")
 
   def metric_fn(self, hypotheses, references):
-    return bleu.moses_multi_bleu(hypotheses, references, lowercase=False)
+    score = bleu.moses_multi_bleu(hypotheses, references, lowercase=False)
+    print ("Done calculating BLEU " + str(score))
+    return score
 
 
 class RougeMetricSpec(TextMetricSpec):
