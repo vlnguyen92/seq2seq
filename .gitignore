@@ -156,3 +156,4 @@ flycheck_*.el
 # End of https://www.gitignore.io/api/emacs
 data/
 trained_models*/
+nmt_data/
