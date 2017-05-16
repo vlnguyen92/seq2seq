@@ -154,6 +154,6 @@ flycheck_*.el
 .dir-locals.el
 
 # End of https://www.gitignore.io/api/emacs
-data/
+#data/
 trained_models*/
 nmt_data/
