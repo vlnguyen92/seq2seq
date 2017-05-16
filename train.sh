@@ -11,7 +11,7 @@ else
 fi
 
 # Set this to where you extracted the downloaded file
-export DATA_PATH=$ROOT_DIR/nmt_data/movie_reviews
+export DATA_PATH=$ROOT_DIR/nmt_data/wmt16_de_en
 
 export VOCAB_SOURCE=${DATA_PATH}/vocab.bpe.32000
 export VOCAB_TARGET=${DATA_PATH}/vocab.bpe.32000
@@ -21,9 +21,9 @@ export DEV_SOURCES=${DATA_PATH}/test.tok.bpe.32000.en
 export DEV_TARGETS=${DATA_PATH}/test.tok.bpe.32000.en
 
 export DEV_TARGETS_REF=${DATA_PATH}/test.tok.en
-export TRAIN_STEPS=100000
+export TRAIN_STEPS=1000000
 
-export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models}/polarity
+export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity
 mkdir -p $MODEL_DIR
 
 python -m bin.train \

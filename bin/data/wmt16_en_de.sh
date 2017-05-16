@@ -25,23 +25,23 @@ OUTPUT_DIR_DATA="${OUTPUT_DIR}/data"
 
 mkdir -p $OUTPUT_DIR_DATA
 
-echo "Downloading Europarl v7. This may take a while..."
-wget -nc -nv -O ${OUTPUT_DIR_DATA}/europarl-v7-de-en.tgz \
-  http://www.statmt.org/europarl/v7/de-en.tgz
-
-echo "Downloading Common Crawl corpus. This may take a while..."
-wget -nc -nv -O ${OUTPUT_DIR_DATA}/common-crawl.tgz \
-  http://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
-
-echo "Downloading News Commentary v11. This may take a while..."
-wget -nc -nv -O ${OUTPUT_DIR_DATA}/nc-v11.tgz \
-  http://data.statmt.org/wmt16/translation-task/training-parallel-nc-v11.tgz
-
-echo "Downloading dev/test sets"
-wget -nc -nv -O  ${OUTPUT_DIR_DATA}/dev.tgz \
-  http://data.statmt.org/wmt16/translation-task/dev.tgz
-wget -nc -nv -O  ${OUTPUT_DIR_DATA}/test.tgz \
-  http://data.statmt.org/wmt16/translation-task/test.tgz
+#echo "Downloading Europarl v7. This may take a while..."
+#wget -nc -nv -O ${OUTPUT_DIR_DATA}/europarl-v7-de-en.tgz \
+#  http://www.statmt.org/europarl/v7/de-en.tgz
+#
+#echo "Downloading Common Crawl corpus. This may take a while..."
+#wget -nc -nv -O ${OUTPUT_DIR_DATA}/common-crawl.tgz \
+#  http://www.statmt.org/wmt13/training-parallel-commoncrawl.tgz
+#
+#echo "Downloading News Commentary v11. This may take a while..."
+#wget -nc -nv -O ${OUTPUT_DIR_DATA}/nc-v11.tgz \
+#  http://data.statmt.org/wmt16/translation-task/training-parallel-nc-v11.tgz
+#
+#echo "Downloading dev/test sets"
+#wget -nc -nv -O  ${OUTPUT_DIR_DATA}/dev.tgz \
+#  http://data.statmt.org/wmt16/translation-task/dev.tgz
+#wget -nc -nv -O  ${OUTPUT_DIR_DATA}/test.tgz \
+#  http://data.statmt.org/wmt16/translation-task/test.tgz
 
 # Extract everything
 echo "Extracting all files..."
@@ -60,57 +60,59 @@ tar -xvzf "${OUTPUT_DIR_DATA}/test.tgz" -C "${OUTPUT_DIR_DATA}/test"
 cat "${OUTPUT_DIR_DATA}/europarl-v7-de-en/europarl-v7.de-en.en" \
   "${OUTPUT_DIR_DATA}/common-crawl/commoncrawl.de-en.en" \
   "${OUTPUT_DIR_DATA}/nc-v11/training-parallel-nc-v11/news-commentary-v11.de-en.en" \
+  "${OUTPUT_DIR}/../rt-polaritydata/train.pos" \
+  "${OUTPUT_DIR}/../rt-polaritydata/train.neg" \
   > "${OUTPUT_DIR}/train.en"
 wc -l "${OUTPUT_DIR}/train.en"
 
-cat "${OUTPUT_DIR_DATA}/europarl-v7-de-en/europarl-v7.de-en.de" \
-  "${OUTPUT_DIR_DATA}/common-crawl/commoncrawl.de-en.de" \
-  "${OUTPUT_DIR_DATA}/nc-v11/training-parallel-nc-v11/news-commentary-v11.de-en.de" \
-  > "${OUTPUT_DIR}/train.de"
-wc -l "${OUTPUT_DIR}/train.de"
+#cat "${OUTPUT_DIR_DATA}/europarl-v7-de-en/europarl-v7.de-en.de" \
+#  "${OUTPUT_DIR_DATA}/common-crawl/commoncrawl.de-en.de" \
+#  "${OUTPUT_DIR_DATA}/nc-v11/training-parallel-nc-v11/news-commentary-v11.de-en.de" \
+#  > "${OUTPUT_DIR}/train.de"
+#wc -l "${OUTPUT_DIR}/train.de"
 
 # Clone Moses
-if [ ! -d "${OUTPUT_DIR}/mosesdecoder" ]; then
-  echo "Cloning moses for data processing"
-  git clone https://github.com/moses-smt/mosesdecoder.git "${OUTPUT_DIR}/mosesdecoder"
-fi
+#if [ ! -d "${OUTPUT_DIR}/mosesdecoder" ]; then
+#  echo "Cloning moses for data processing"
+#  git clone https://github.com/moses-smt/mosesdecoder.git "${OUTPUT_DIR}/mosesdecoder"
+#fi
 
 # Convert SGM files
 # Convert newstest2014 data into raw text format
-${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
-  < ${OUTPUT_DIR_DATA}/dev/dev/newstest2014-deen-src.de.sgm \
-  > ${OUTPUT_DIR_DATA}/dev/dev/newstest2014.de
+#${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
+#  < ${OUTPUT_DIR_DATA}/dev/dev/newstest2014-deen-src.de.sgm \
+#  > ${OUTPUT_DIR_DATA}/dev/dev/newstest2014.de
 ${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
   < ${OUTPUT_DIR_DATA}/dev/dev/newstest2014-deen-ref.en.sgm \
   > ${OUTPUT_DIR_DATA}/dev/dev/newstest2014.en
 
 # Convert newstest2015 data into raw text format
-${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
-  < ${OUTPUT_DIR_DATA}/dev/dev/newstest2015-deen-src.de.sgm \
-  > ${OUTPUT_DIR_DATA}/dev/dev/newstest2015.de
+#${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
+#  < ${OUTPUT_DIR_DATA}/dev/dev/newstest2015-deen-src.de.sgm \
+#  > ${OUTPUT_DIR_DATA}/dev/dev/newstest2015.de
 ${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
   < ${OUTPUT_DIR_DATA}/dev/dev/newstest2015-deen-ref.en.sgm \
   > ${OUTPUT_DIR_DATA}/dev/dev/newstest2015.en
 
 # Convert newstest2016 data into raw text format
-${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
-  < ${OUTPUT_DIR_DATA}/test/test/newstest2016-deen-src.de.sgm \
-  > ${OUTPUT_DIR_DATA}/test/test/newstest2016.de
+#${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
+#  < ${OUTPUT_DIR_DATA}/test/test/newstest2016-deen-src.de.sgm \
+#  > ${OUTPUT_DIR_DATA}/test/test/newstest2016.de
 ${OUTPUT_DIR}/mosesdecoder/scripts/ems/support/input-from-sgm.perl \
   < ${OUTPUT_DIR_DATA}/test/test/newstest2016-deen-ref.en.sgm \
   > ${OUTPUT_DIR_DATA}/test/test/newstest2016.en
 
 # Copy dev/test data to output dir
-cp ${OUTPUT_DIR_DATA}/dev/dev/newstest20*.de ${OUTPUT_DIR}
+#cp ${OUTPUT_DIR_DATA}/dev/dev/newstest20*.de ${OUTPUT_DIR}
 cp ${OUTPUT_DIR_DATA}/dev/dev/newstest20*.en ${OUTPUT_DIR}
-cp ${OUTPUT_DIR_DATA}/test/test/newstest20*.de ${OUTPUT_DIR}
+#cp ${OUTPUT_DIR_DATA}/test/test/newstest20*.de ${OUTPUT_DIR}
 cp ${OUTPUT_DIR_DATA}/test/test/newstest20*.en ${OUTPUT_DIR}
 
 # Tokenize data
-for f in ${OUTPUT_DIR}/*.de; do
-  echo "Tokenizing $f..."
-  ${OUTPUT_DIR}/mosesdecoder/scripts/tokenizer/tokenizer.perl -q -l de -threads 8 < $f > ${f%.*}.tok.de
-done
+#for f in ${OUTPUT_DIR}/*.de; do
+#  echo "Tokenizing $f..."
+#  ${OUTPUT_DIR}/mosesdecoder/scripts/tokenizer/tokenizer.perl -q -l de -threads 8 < $f > ${f%.*}.tok.de
+#done
 
 for f in ${OUTPUT_DIR}/*.en; do
   echo "Tokenizing $f..."
@@ -121,24 +123,24 @@ done
 for f in ${OUTPUT_DIR}/*.en; do
   fbase=${f%.*}
   echo "Cleaning ${fbase}..."
-  ${OUTPUT_DIR}/mosesdecoder/scripts/training/clean-corpus-n.perl $fbase de en "${fbase}.clean" 1 80
+  ${OUTPUT_DIR}/mosesdecoder/scripts/training/clean-corpus-n.perl $fbase en en "${fbase}.clean" 1 80
 done
 
 # Create character vocabulary (on tokenized data)
 ${BASE_DIR}/bin/tools/generate_vocab.py --delimiter "" \
   < ${OUTPUT_DIR}/train.tok.clean.en \
   > ${OUTPUT_DIR}/vocab.tok.char.en
-${BASE_DIR}/bin/tools/generate_vocab.py --delimiter "" \
-  < ${OUTPUT_DIR}/train.tok.clean.de \
-  > ${OUTPUT_DIR}/vocab.tok.char.de
+#${BASE_DIR}/bin/tools/generate_vocab.py --delimiter "" \
+#  < ${OUTPUT_DIR}/train.tok.clean.de \
+#  > ${OUTPUT_DIR}/vocab.tok.char.de
 
 # Create character vocabulary (on non-tokenized data)
 ${BASE_DIR}/bin/tools/generate_vocab.py --delimiter "" \
   < ${OUTPUT_DIR}/train.clean.en \
   > ${OUTPUT_DIR}/vocab.char.en
-${BASE_DIR}/bin/tools/generate_vocab.py --delimiter "" \
-  < ${OUTPUT_DIR}/train.clean.de \
-  > ${OUTPUT_DIR}/vocab.char.de
+#${BASE_DIR}/bin/tools/generate_vocab.py --delimiter "" \
+#  < ${OUTPUT_DIR}/train.clean.de \
+#  > ${OUTPUT_DIR}/vocab.char.de
 
 # Create vocabulary for EN data
 $BASE_DIR/bin/tools/generate_vocab.py \
@@ -147,10 +149,10 @@ $BASE_DIR/bin/tools/generate_vocab.py \
   > ${OUTPUT_DIR}/vocab.50k.en \
 
 # Create vocabulary for DE data
-$BASE_DIR/bin/tools/generate_vocab.py \
-  --max_vocab_size 50000 \
-  < ${OUTPUT_DIR}/train.tok.clean.de \
-  > ${OUTPUT_DIR}/vocab.50k.de \
+#$BASE_DIR/bin/tools/generate_vocab.py \
+#  --max_vocab_size 50000 \
+#  < ${OUTPUT_DIR}/train.tok.clean.de \
+#  > ${OUTPUT_DIR}/vocab.50k.de \
 
 # Generate Subword Units (BPE)
 # Clone Subword NMT
@@ -161,11 +163,11 @@ fi
 # Learn Shared BPE
 for merge_ops in 32000; do
   echo "Learning BPE with merge_ops=${merge_ops}. This may take a while..."
-  cat "${OUTPUT_DIR}/train.tok.clean.de" "${OUTPUT_DIR}/train.tok.clean.en" | \
+  cat "${OUTPUT_DIR}/train.tok.clean.en" | \
     ${OUTPUT_DIR}/subword-nmt/learn_bpe.py -s $merge_ops > "${OUTPUT_DIR}/bpe.${merge_ops}"
 
   echo "Apply BPE with merge_ops=${merge_ops} to tokenized files..."
-  for lang in en de; do
+  for lang in en; do
     for f in ${OUTPUT_DIR}/*.tok.${lang} ${OUTPUT_DIR}/*.tok.clean.${lang}; do
       outfile="${f%.*}.bpe.${merge_ops}.${lang}"
       ${OUTPUT_DIR}/subword-nmt/apply_bpe.py -c "${OUTPUT_DIR}/bpe.${merge_ops}" < $f > "${outfile}"
@@ -174,7 +176,7 @@ for merge_ops in 32000; do
   done
 
   # Create vocabulary file for BPE
-  cat "${OUTPUT_DIR}/train.tok.clean.bpe.${merge_ops}.en" "${OUTPUT_DIR}/train.tok.clean.bpe.${merge_ops}.de" | \
+  cat "${OUTPUT_DIR}/train.tok.clean.bpe.${merge_ops}.en" | \
     ${OUTPUT_DIR}/subword-nmt/get_vocab.py | cut -f1 -d ' ' > "${OUTPUT_DIR}/vocab.bpe.${merge_ops}"
 
 done
