@@ -50,5 +50,5 @@ python -m bin.train \
         - $DEV_TARGETS" \
   --batch_size 128\
   --train_steps $TRAIN_STEPS \
-  --eval_every_n_steps 100000 \
+  --eval_every_n_steps 1000000 \
   --output_dir $MODEL_DIR
