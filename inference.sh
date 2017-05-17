@@ -2,7 +2,7 @@
 
 # Set this to where you extracted the downloaded file
 #export DATA_PATH=/scratch/wellman_fluxg/lvnguyen/seq2seq/data
-export DATA_PATH=./data
+export DATA_PATH=./nmt_data/wmt_polarity
 
 export VOCAB_SOURCE=${DATA_PATH}/vocab.bpe.32000
 export VOCAB_TARGET=${DATA_PATH}/vocab.bpe.32000
@@ -33,5 +33,5 @@ python -m bin.infer \
     class: ParallelTextInputPipeline
     params:
       source_files:
-        - $DEV_SOURCES" \
-  > ${PRED_DIR}/predictions_polarity.txt
+        - $DEV_SOURCES"
+#  > ${PRED_DIR}/predictions_polarity.txt

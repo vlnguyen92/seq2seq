@@ -78,3 +78,7 @@ class DumpBeams(InferenceTask):
 
   def end(self, _session):
     np.savez(self.params["file"], **self._beam_accum)
+#    root_dir = os.path.dirnam(self.params["file"])
+#    np.save(root_dir + '/preds.npy', self._beam_accum["predicted_ids"])
+#    np.save(root_dir + '/scores.npy', self._beam_accum["scores"])
+#    np.save(root_dir + '/probs.npy', self._beam_accum["log_probs"])
