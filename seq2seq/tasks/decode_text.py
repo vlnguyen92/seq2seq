@@ -24,6 +24,7 @@ import functools
 from pydoc import locate
 
 import numpy as np
+import json
 
 import tensorflow as tf
 from tensorflow import gfile
@@ -151,7 +152,6 @@ class DecodeText(InferenceTask):
 
   def after_run(self, _run_context, run_values):
     fetches_batch = run_values.results
-    print (type(fetches_batch))
     for fetches in unbatch_dict(fetches_batch):
       # Convert to unicode
       fetches["predicted_tokens"] = np.char.decode(
@@ -183,7 +183,11 @@ class DecodeText(InferenceTask):
       # Apply postproc
       if self._postproc_fn:
         sent = self._postproc_fn(sent)
+      
+      #LOOK UP
+      with open('../autoencoder/processed_data/inv_vocab.json','r') as fp:
+        vocab = json.load(fp)
 
-      sent = sent.strip()
-
-      print(sent.encode('utf-8'))
+      ids = [vocab[token] for token in predicted_tokens if token != 'SEQUENCE_END']
+      print (ids)
+#      print(sent.encode('utf-8'))

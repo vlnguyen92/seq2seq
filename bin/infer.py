@@ -122,8 +122,7 @@ def main(_argv):
 
     # Run until the inputs are exhausted
     while not sess.should_stop():
-      preds = sess.run([predictions])
-      print (type(preds))
+      sess.run([])
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)

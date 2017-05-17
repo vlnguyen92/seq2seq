@@ -34,4 +34,4 @@ python -m bin.infer \
     params:
       source_files:
         - $DEV_SOURCES"
-#  > ${PRED_DIR}/predictions_polarity.txt
+  > ${PRED_DIR}/predictions_polarity.txt
