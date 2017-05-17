@@ -31,6 +31,39 @@ from seq2seq.decoders.beam_search_decoder import BeamSearchDecoder
 from seq2seq.inference import beam_search
 from seq2seq.models.model_base import ModelBase, _flatten_dict
 
+def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=100):
+    vars, names = get_vars_from_scope(cnn.__class__.__name__)
+#    print names
+#    all_variables = list_variables(checkpoint_dir)
+#    var_list = [var[0] for var in all_variables]
+    saved_classifier = tf.train.get_checkpoint_state(checkpoint_dir)
+#    checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
+    saver_classifier = tf.train.Saver(var_list=vars)
+#    saver_classifier = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
+    saver_classifier.restore(session, saved_classifier.model_checkpoint_path)
+
+    #Placeholders
+    input_x = cnn.input_x#graph.get_operation_by_name("input_x").outputs[0]
+
+    dropout_keep_prob = cnn.dropout_keep_prob#graph.get_operation_by_name("dropout_keep_prob").outputs[0]
+
+    #logits 
+#    print data.shape
+    text_scores = cnn.scores #graph.get_operation_by_name("output/scores").outputs[0]
+#    preds = cnn.predictions #graph.get_operation_by_name("output/predictions").outputs[0]
+    preds_inverse = tf.reshape(tf.argmin(text_scores,
+        1,name='inverse_predictions'),[batch_size,1])
+    cnn_preds = tf.reshape(cnn.predictions,[batch_size,1])
+
+#    print preds_inverse.get_shape()
+#    print cnn_preds.get_shape()
+    preds = tf.concat([preds_inverse,cnn_preds],1)
+
+    scores, preds = session.run([text_scores, preds], 
+            {input_x: data, dropout_keep_prob: 1.0})
+
+    return scores, preds 
+
 
 class Seq2SeqModel(ModelBase):
   """Base class for seq2seq models with embeddings
@@ -284,14 +317,33 @@ class Seq2SeqModel(ModelBase):
         targets=tf.transpose(labels["target_ids"][:, 1:], [1, 0]),
         sequence_length=labels["target_len"] - 1)
 
+    #######################Add another loss term#####################
+    #_, real_labels = infer_classifier(cnn,session,
+    #        batch_data_padded,classifier_dir)
+
+    #reconstructed_sentences = session.run(model.decoder_prediction_train, fd)
+    #reconstructed_sentences_padded = np.zeros(batch_data_padded.shape)
+    #reconstructed_sentences_padded[:reconstructed_sentences.T.shape[0],
+    #        :reconstructed_sentences.T.shape[1]]
+    #reconstructed_scores, fake_labels = infer_classifier(cnn,
+    #        session, reconstructed_sentences_padded, classifier_dir)
+
+    #losses = tf.nn.softmax_cross_entropy_with_logits(logits=reconstructed_scores,
+    #        labels = real_labels)
+    #distance_loss = tf.multiply(tf.reduce_mean(losses),10)
+    #################################################################
+
     # Calculate the average log perplexity
     loss = tf.reduce_sum(losses) / tf.to_float(
         tf.reduce_sum(labels["target_len"] - 1))
+
+    loss += distance_loss
 
     return losses, loss
 
   def _build(self, features, labels, params):
     # Pre-process features and labels
+    print ("HEREHREHREHRHEHRHERHEHHRHEHREHRHEHRHEHRHEHRHRHERHEHR")
     features, labels = self._preprocess(features, labels)
 
     encoder_output = self.encode(features, labels)

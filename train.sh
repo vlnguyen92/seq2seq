@@ -21,7 +21,7 @@ export DEV_SOURCES=${DATA_PATH}/test.tok.bpe.32000.en
 export DEV_TARGETS=${DATA_PATH}/test.tok.bpe.32000.en
 
 export DEV_TARGETS_REF=${DATA_PATH}/test.tok.en
-export TRAIN_STEPS=1000000
+export TRAIN_STEPS=10
 
 export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity
 mkdir -p $MODEL_DIR

@@ -33,5 +33,5 @@ python -m bin.infer \
     class: ParallelTextInputPipeline
     params:
       source_files:
-        - $DEV_SOURCES"
+        - $DEV_SOURCES" \
   > ${PRED_DIR}/predictions_polarity.txt
