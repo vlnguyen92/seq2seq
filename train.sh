@@ -23,10 +23,10 @@ export DEV_TARGETS=${DATA_PATH}/test.tok.bpe.32000.en
 export DEV_TARGETS_REF=${DATA_PATH}/test.tok.en
 export TRAIN_STEPS=10
 
-export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity
+export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity_adv
 mkdir -p $MODEL_DIR
 
-python -m bin.train \
+python -m bin/train \
   --config_paths="
       ./example_configs/nmt_small.yml,
       ./example_configs/train_seq2seq.yml,

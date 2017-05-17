@@ -21,17 +21,19 @@ from __future__ import unicode_literals
 import collections
 
 import tensorflow as tf
+import pdb
 
 from seq2seq import graph_utils
 from seq2seq import losses as seq2seq_losses
 from seq2seq.contrib.seq2seq.decoder import _transpose_batch_time
 from seq2seq.data import vocab
+from seq2seq.extra.text_cnn import TextCNN
 from seq2seq.graph_utils import templatemethod
 from seq2seq.decoders.beam_search_decoder import BeamSearchDecoder
 from seq2seq.inference import beam_search
 from seq2seq.models.model_base import ModelBase, _flatten_dict
 
-def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=100):
+def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=128):
     vars, names = get_vars_from_scope(cnn.__class__.__name__)
 #    print names
 #    all_variables = list_variables(checkpoint_dir)
@@ -337,13 +339,12 @@ class Seq2SeqModel(ModelBase):
     loss = tf.reduce_sum(losses) / tf.to_float(
         tf.reduce_sum(labels["target_len"] - 1))
 
-    loss += distance_loss
+#    loss += distance_loss
 
     return losses, loss
 
   def _build(self, features, labels, params):
     # Pre-process features and labels
-    print ("HEREHREHREHRHEHRHERHEHHRHEHREHRHEHRHEHRHEHRHRHERHEHR")
     features, labels = self._preprocess(features, labels)
 
     encoder_output = self.encode(features, labels)
@@ -366,6 +367,16 @@ class Seq2SeqModel(ModelBase):
           features=features,
           labels=labels,
           losses=losses)
+    
+      filter_sizes="3,4,5"
+      cnn = TextCNN(sequence_length=73,
+                num_classes=2,
+                vocab_size=35881,
+                embedding_size=128,
+                filter_sizes=list(map(int,filter_sizes.split(","))),
+                num_filters=128,
+                l2_reg_lambda=0.0) 
+
 
     # We add "useful" tensors to the graph collection so that we
     # can easly find them in our hooks/monitors.
