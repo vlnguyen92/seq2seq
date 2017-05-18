@@ -80,6 +80,7 @@ class ModelBase(Configurable):
     optimizer = tf.contrib.layers.OPTIMIZER_CLS_NAMES[name](
         learning_rate=self.params["optimizer.learning_rate"],
         **self.params["optimizer.params"])
+#    pdb.set_trace()
 
     # Optionally wrap with SyncReplicasOptimizer
     if self.params["optimizer.sync_replicas"] > 0:
@@ -106,6 +107,7 @@ class ModelBase(Configurable):
         staircase=self.params["optimizer.lr_staircase"])
 
     optimizer = self._create_optimizer()
+    vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope='model')
     train_op = tf.contrib.layers.optimize_loss(
         loss=loss,
         global_step=tf.contrib.framework.get_global_step(),
@@ -113,6 +115,7 @@ class ModelBase(Configurable):
         learning_rate_decay_fn=learning_rate_decay_fn,
         clip_gradients=self._clip_gradients,
         optimizer=optimizer,
+        variables=vars,
         summaries=["learning_rate", "loss", "gradients", "gradient_norm"])
 
     return train_op

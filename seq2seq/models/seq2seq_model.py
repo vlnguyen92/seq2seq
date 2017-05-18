@@ -381,6 +381,7 @@ class Seq2SeqModel(ModelBase):
     return losses, loss
 
   def _build(self, features, labels, params):
+    print ("BUILD CALLED")
     # Pre-process features and labels
     features, labels = self._preprocess(features, labels)
 

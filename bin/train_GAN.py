@@ -25,9 +25,11 @@ import os
 import tempfile
 
 import yaml
+import json
 
 import tensorflow as tf
 import numpy as np
+import pdb
 from tensorflow.contrib.learn.python.learn import learn_runner
 from tensorflow.contrib.learn.python.learn.estimators import run_config
 from seq2seq.extra.text_cnn import TextCNN
@@ -46,74 +48,6 @@ from seq2seq.metrics import metric_specs
 from seq2seq.training import hooks
 from seq2seq.training import utils as training_utils
 
-batch_size = 2
-input_depth = 4
-sequence_length = 10
-
-# Create vocabulary
-vocab_list = [str(_) for _ in range(10)]
-vocab_list += ["笑う", "泣く", "了解", "はい", "＾＿＾"]
-vocab_size = len(vocab_list)
-vocab_file = test_utils.create_temporary_vocab_file(vocab_list)
-vocab_info = vocab.get_vocab_info(vocab_file.name)
-
-def create_model(mode, params=None):
-    params_ = AttentionSeq2Seq.default_params().copy()
-#    params_.update(TEST_PARAMS)
-#    params_.update({
-#        "source.reverse": True,
-#        "vocab_source": vocab_file.name,
-#        "vocab_target": vocab_file.name,
-#    })
-    params_.update(params or {})
-    return AttentionSeq2Seq(params=params_, mode=mode)
-
-
-def _test_pipeline(mode, params=None):
-    """Helper function to test the full model pipeline.
-    """
-    # Create source and target example
-    source_len = sequence_length + 5
-    target_len = sequence_length + 10
-    source = " ".join(np.random.choice(vocab_list, source_len))
-    target = " ".join(np.random.choice(vocab_list, target_len))
-    sources_file, targets_file = test_utils.create_temp_parallel_data(
-        sources=[source], targets=[target])
-
-    # Build model graph
-    model = create_model(mode, params)
-    input_pipeline_ = input_pipeline.ParallelTextInputPipeline(
-        params={
-            "source_files": [sources_file.name],
-            "target_files": [targets_file.name]
-        },
-        mode=mode)
-    input_fn = training_utils.create_input_fn(
-        pipeline=input_pipeline_, batch_size=batch_size)
-    features, labels = input_fn()
-    fetches = model(features, labels, None)
-    fetches = [_ for _ in fetches if _ is not None]
-
-    with tf.Session() as sess:
-      sess.run(tf.global_variables_initializer())
-      sess.run(tf.local_variables_initializer())
-      sess.run(tf.tables_initializer())
-      with tf.contrib.slim.queues.QueueRunners(sess):
-        fetches_ = sess.run(fetches)
-        print (fetches_)
-
-    sources_file.close()
-    targets_file.close()
-
-    return model, fetches_
-
-def test_train():
-    model, fetches_ = _test_pipeline(tf.contrib.learn.ModeKeys.TRAIN)
-    predictions_, loss_, _ = fetches_
-
-    target_len = sequence_length + 10 + 2
-    max_decode_length = model.params["target.max_seq_len"]
-    expected_decode_len = np.minimum(target_len, max_decode_length)
 
 tf.flags.DEFINE_string("config_paths", "",
                        """Path to a YAML configuration files defining FLAG
@@ -193,6 +127,61 @@ tf.flags.DEFINE_boolean("log_device_placement", False,
 
 FLAGS = tf.flags.FLAGS
 
+def translate(sentence):
+    with open('../autoencoder/processed_data/vocab.json','r') as fp:
+        word_dict = json.load(fp)
+
+    sentence_str = []
+    for id in list(sentence):
+        word = word_dict.get(str(id))
+        sentence_str.append(word)
+#        print word,id
+    print (" ".join(sentence_str))
+
+def get_vars_from_scope(scope):
+    vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope=scope)
+    names = list(v.name for v in vars)
+    return vars, names
+
+def pad_sentence(input_tensor):
+    reconstructed_shape = tf.shape(input_tensor)
+    padded_shape=[128,73 - reconstructed_shape[1]]
+    padded_vals = tf.fill(padded_shape,35880)
+    return tf.concat([input_tensor,padded_vals],
+                                      axis=1)
+
+
+def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=100):
+    vars, names = get_vars_from_scope(cnn.__class__.__name__)
+    saved_classifier = tf.train.get_checkpoint_state(checkpoint_dir)
+    saver_classifier = tf.train.Saver(var_list=vars)
+#    pdb.set_trace()
+    saver_classifier.restore(session, saved_classifier.model_checkpoint_path)
+
+    #Placeholders
+    input_x = cnn.input_x#graph.get_operation_by_name("input_x").outputs[0]
+
+    dropout_keep_prob = cnn.dropout_keep_prob#graph.get_operation_by_name("dropout_keep_prob").outputs[0]
+
+    #logits 
+    text_scores = cnn.scores 
+    preds_inverse = tf.reshape(tf.argmin(text_scores,
+        1,name='inverse_predictions'),[batch_size,1])
+    cnn_preds = tf.reshape(cnn.predictions,[batch_size,1])
+
+    preds = tf.concat([preds_inverse,cnn_preds],1)
+
+    scores, preds = session.run([text_scores, preds], 
+            {input_x: data, dropout_keep_prob: 1.0})
+
+    return scores, preds 
+
+
+def create_model(mode, params=None):
+    params_ = AttentionSeq2Seq.default_params().copy()
+    params_.update(params or {})
+    return AttentionSeq2Seq(params=params_, mode=mode)
+
 def create_experiment(output_dir):
   """
   Creates a new Experiment instance.
@@ -210,8 +199,6 @@ def create_experiment(output_dir):
       gpu_memory_fraction=FLAGS.gpu_memory_fraction)
   config.tf_config.gpu_options.allow_growth = FLAGS.gpu_allow_growth
   config.tf_config.log_device_placement = FLAGS.log_device_placement
-
-  dummy = tf.Variable(tf.random_normal([1,2,3]),name='dummy')
 
   train_options = training_utils.TrainOptions(
       model_class=FLAGS.model,
@@ -237,56 +224,71 @@ def create_experiment(output_dir):
       bucket_boundaries=bucket_boundaries,
       scope="train_input_fn")
 
-  # Development data input pipeline
-  dev_input_pipeline = input_pipeline.make_input_pipeline_from_def(
-      def_dict=FLAGS.input_pipeline_dev,
-      mode=tf.contrib.learn.ModeKeys.EVAL,
-      shuffle=False, num_epochs=1)
-
-  # Create eval input function
-  eval_input_fn = training_utils.create_input_fn(
-      pipeline=dev_input_pipeline,
-      batch_size=FLAGS.batch_size,
-      allow_smaller_final_batch=True,
-      scope="dev_input_fn")
-
   model = create_model(mode=tf.contrib.learn.ModeKeys.TRAIN,
           params=train_options.model_params)
 
+  data_provider = train_input_pipeline.make_data_provider()
+
   features, labels = train_input_fn()
+
+
+  filter_sizes="3,4,5"
+  cnn = TextCNN(sequence_length=73,
+            num_classes=2,
+            vocab_size=35883,
+            embedding_size=128,
+            filter_sizes=list(map(int,filter_sizes.split(","))),
+            num_filters=128,
+            l2_reg_lambda=0.0) 
+
   fetches = model(features,labels,None)
-  fetches = [_ for _ in fetches if _ is not None]
+  predictions_, loss_, train_op_ = fetches
 
-#  model = AttentionSeq2Seq(params=train_options.model_params,
-#          mode=tf.contrib.learn.ModeKeys.TRAIN)
-  #_create_from_dict({
-  #      "class": train_options.model_class,
-  #      "params": train_options.model_params
-  #  }, models, mode=tf.contrib.learn.ModeKeys.TRAIN)
+  reconstructed_sentences = pad_sentence(predictions_['predicted_ids'])
 
-#  print (train_options.model_params)
 
-#  params = {'target.max_seq_len': 50, 
-#          'encoder.class': 'seq2seq.encoders.BidirectionalRNNEncoder', 'bridge.class':
-#          'seq2seq.models.bridges.ZeroBridge', 'decoder.params': {'rnn_cell':
-#              {'dropout_input_keep_prob': 0.8, 'cell_class': 'GRUCell',
-#                  'dropout_output_keep_prob': 1.0, 'cell_params': {'num_units':
-#                      128}, 'num_layers': 1}}, 'optimizer.learning_rate':
-#                  0.0001, 'vocab_source':
-#                  './nmt_data/wmt16_de_en/vocab.bpe.32000', 'source.reverse':
-#                  False, 'optimizer.name': 'Adam', 'attention.class':
-#                  'seq2seq.decoders.attention.AttentionLayerDot',
-#                  'vocab_target': './nmt_data/wmt16_de_en/vocab.bpe.32000',
-#                  'decoder.class': 'seq2seq.decoders.AttentionDecoder',
-#                  'embedding.dim': 128, 'optimizer.params': {'epsilon': 8e-07},
-#                  'attention.params': {'num_units': 128}, 'encoder.params':
-#                  {'rnn_cell': {'dropout_input_keep_prob': 0.8, 'cell_class':
-#                      'GRUCell', 'dropout_output_keep_prob': 1.0,
-#                      'cell_params': {'num_units': 128}, 'num_layers': 1}},
-#                  'source.max_seq_len': 50}
-    
-#  return model 
+  #######################Add another loss term#####################
+  #_, real_labels = infer_classifier(cnn,session,
+  #        batch_data_padded,classifier_dir)
 
+  #reconstructed_sentences = session.run(model.decoder_prediction_train, fd)
+  #reconstructed_sentences_padded = np.zeros(batch_data_padded.shape)
+  #reconstructed_sentences_padded[:reconstructed_sentences.T.shape[0],
+  #        :reconstructed_sentences.T.shape[1]]
+  #reconstructed_scores, fake_labels = infer_classifier(cnn,
+  #        session, reconstructed_sentences_padded, classifier_dir)
+
+  #losses = tf.nn.softmax_cross_entropy_with_logits(logits=reconstructed_scores,
+  #        labels = real_labels)
+  #distance_loss = tf.multiply(tf.reduce_mean(losses),10)
+  #loss = model.loss + distance_loss
+
+  #### Loss summaries
+
+  #train_op = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+  ################################################################
+
+  vars, _ = get_vars_from_scope(scope='model')
+
+  saver = tf.train.Saver(var_list = vars)
+  saved_model = tf.train.get_checkpoint_state(output_dir)
+
+  classifier_dir = '../../text_autoencoder/autoencoder/runs/1495141268/checkpoints'
+
+  with tf.Session() as sess:
+    sess.run(tf.tables_initializer())
+    saver.restore(sess,saved_model.model_checkpoint_path)
+    with tf.contrib.slim.queues.QueueRunners(sess):
+        for _ in range(10):
+#            data = sess.run(predictions_['features.source_ids'])
+            data = sess.run(reconstructed_sentences)
+            print (data.shape)
+#            print (translate(data[0]))
+#            data = preds['features.source_ids']
+#            print (preds['features.source_tokens'][0])
+            print (infer_classifier(cnn,sess,data,classifier_dir))
+#      print (len(out))
+#      print (type(loss_),type(predictions_))
 
 def main(_argv):
   """The entrypoint for the script"""
@@ -342,13 +344,12 @@ def main(_argv):
       model_class=FLAGS.model,
       model_params=FLAGS.model_params)
 
-
   create_experiment(FLAGS.output_dir)
 
-  vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-  names = list(v.name for v in vars)
-  print ("ALL_VARIABLES")
-  print (names)
+#  vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+#  names = list(v.name for v in vars)
+#  print ("ALL_VARIABLES")
+#  print (names)
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)

@@ -84,7 +84,7 @@ class InputPipeline(Configurable):
   @staticmethod
   def default_params():
     return {
-        "shuffle": True,
+        "shuffle": False,
         "num_epochs": None,
     }
 

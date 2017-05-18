@@ -11,12 +11,12 @@ else
 fi
 
 # Set this to where you extracted the downloaded file
-export DATA_PATH=$ROOT_DIR/nmt_data/wmt16_de_en
+export DATA_PATH=$ROOT_DIR/nmt_data/wmt_polarity
 
 export VOCAB_SOURCE=${DATA_PATH}/vocab.bpe.32000
 export VOCAB_TARGET=${DATA_PATH}/vocab.bpe.32000
-export TRAIN_SOURCES=${DATA_PATH}/train.tok.clean.bpe.32000.en
-export TRAIN_TARGETS=${DATA_PATH}/train.tok.clean.bpe.32000.en
+export TRAIN_SOURCES=${DATA_PATH}/rt-polarity.pos.tok.clean.bpe.32000.en
+export TRAIN_TARGETS=${DATA_PATH}/rt-polarity.pos.tok.clean.bpe.32000.en
 export DEV_SOURCES=${DATA_PATH}/test.tok.bpe.32000.en
 export DEV_TARGETS=${DATA_PATH}/test.tok.bpe.32000.en
 

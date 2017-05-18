@@ -157,3 +157,5 @@ flycheck_*.el
 #data/
 trained_models*/
 nmt_data/
+runs/
+out
