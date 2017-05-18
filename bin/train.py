@@ -29,6 +29,7 @@ import yaml
 import tensorflow as tf
 from tensorflow.contrib.learn.python.learn import learn_runner
 from tensorflow.contrib.learn.python.learn.estimators import run_config
+from seq2seq.extra.text_cnn import TextCNN
 from tensorflow import gfile
 
 from seq2seq import models
@@ -126,6 +127,7 @@ def create_experiment(output_dir):
     output_dir: Output directory for model checkpoints and summaries.
   """
 
+
   config = run_config.RunConfig(
       tf_random_seed=FLAGS.tf_random_seed,
       save_checkpoints_secs=FLAGS.save_checkpoints_secs,
@@ -173,9 +175,27 @@ def create_experiment(output_dir):
       allow_smaller_final_batch=True,
       scope="dev_input_fn")
 
+#  filter_sizes="3,4,5"
+#  cnn = TextCNN(sequence_length=73,
+#            num_classes=2,
+#            vocab_size=35881,
+#            embedding_size=128,
+#            filter_sizes=list(map(int,filter_sizes.split(","))),
+#            num_filters=128,
+#            l2_reg_lambda=0.0) 
+
 
   def model_fn(features, labels, params, mode):
     """Builds the model graph"""
+#    filter_sizes="3,4,5"
+#    cnn = TextCNN(sequence_length=73,
+#            num_classes=2,
+#            vocab_size=35881,
+#            embedding_size=128,
+#            filter_sizes=list(map(int,filter_sizes.split(","))),
+#            num_filters=128,
+#            l2_reg_lambda=0.0) 
+
     model = _create_from_dict({
         "class": train_options.model_class,
         "params": train_options.model_params
@@ -212,6 +232,11 @@ def create_experiment(output_dir):
       eval_steps=None,
       eval_metrics=eval_metrics,
       train_monitors=train_hooks)
+
+  vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+  names = list(v.name for v in vars)
+  print ("ALL_VARIABLES")
+  print (len(names))
 
   return experiment
 
@@ -266,11 +291,11 @@ def main(_argv):
   if not FLAGS.input_pipeline_dev:
     raise ValueError("You must specify input_pipeline_dev")
 
+
   learn_runner.run(
       experiment_fn=create_experiment,
       output_dir=FLAGS.output_dir,
       schedule=FLAGS.schedule)
-
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)

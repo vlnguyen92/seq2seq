@@ -33,7 +33,19 @@ from seq2seq.decoders.beam_search_decoder import BeamSearchDecoder
 from seq2seq.inference import beam_search
 from seq2seq.models.model_base import ModelBase, _flatten_dict
 
-def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=128):
+def infer_classifier(data,batch_size=128):
+    checkpoint_dir = './runs/trained_classifier'
+    graph = tf.Graph()
+
+    filter_sizes="3,4,5"
+    cnn = TextCNN(sequence_length=73,
+                num_classes=2,
+                vocab_size=35881,
+                embedding_size=128,
+                filter_sizes=list(map(int,filter_sizes.split(","))),
+                num_filters=128,
+                l2_reg_lambda=0.0) 
+
     vars, names = get_vars_from_scope(cnn.__class__.__name__)
 #    print names
 #    all_variables = list_variables(checkpoint_dir)
@@ -55,6 +67,7 @@ def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=128):
 #    preds = cnn.predictions #graph.get_operation_by_name("output/predictions").outputs[0]
     preds_inverse = tf.reshape(tf.argmin(text_scores,
         1,name='inverse_predictions'),[batch_size,1])
+
     cnn_preds = tf.reshape(cnn.predictions,[batch_size,1])
 
 #    print preds_inverse.get_shape()
@@ -63,6 +76,7 @@ def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=128):
 
     scores, preds = session.run([text_scores, preds], 
             {input_x: data, dropout_keep_prob: 1.0})
+    sess.close()
 
     return scores, preds 
 
@@ -73,6 +87,15 @@ class Seq2SeqModel(ModelBase):
 
   def __init__(self, params, mode, name):
     super(Seq2SeqModel, self).__init__(params, mode, name)
+
+#    filter_sizes="3,4,5"
+#    cnn = TextCNN(sequence_length=73,
+#            num_classes=2,
+#            vocab_size=35881,
+#            embedding_size=128,
+#            filter_sizes=list(map(int,filter_sizes.split(","))),
+#            num_filters=128,
+#            l2_reg_lambda=0.0) 
 
     self.source_vocab_info = None
     if "vocab_source" in self.params and self.params["vocab_source"]:
@@ -106,6 +129,7 @@ class Seq2SeqModel(ModelBase):
     gradients to a specified value."""
     grads_and_vars = super(Seq2SeqModel, self)._clip_gradients(grads_and_vars)
 
+#    pdb.set_trace()
     clipped_gradients = []
     variables = []
     for gradient, variable in grads_and_vars:
@@ -312,6 +336,18 @@ class Seq2SeqModel(ModelBase):
     Returns a tuple `(losses, loss)`, where `losses` are the per-batch
     losses and loss is a single scalar tensor to minimize.
     """
+#    dummy = tf.Variable(tf.truncated_normal([1,2,3]))
+#    filter_sizes="3,4,5"
+#    cnn = TextCNN(sequence_length=73,
+#              num_classes=2,
+#              vocab_size=35881,
+#              embedding_size=128,
+#              filter_sizes=list(map(int,filter_sizes.split(","))),
+#              num_filters=128,
+#              l2_reg_lambda=0.0) 
+
+#    saver = tf.train.import_meta_graph('./runs/trained_classifier/checkpoints/model-33400.meta')
+
     #pylint: disable=R0201
     # Calculate loss per example-timestep of shape [B, T]
     losses = seq2seq_losses.cross_entropy_sequence_loss(
@@ -338,6 +374,7 @@ class Seq2SeqModel(ModelBase):
     # Calculate the average log perplexity
     loss = tf.reduce_sum(losses) / tf.to_float(
         tf.reduce_sum(labels["target_len"] - 1))
+#    pdb.set_trace()
 
 #    loss += distance_loss
 
@@ -356,6 +393,7 @@ class Seq2SeqModel(ModelBase):
       loss = None
       train_op = None
     else:
+#      dummy = tf.Variable(tf.truncated_normal([1,2,3]))
       losses, loss = self.compute_loss(decoder_output, features, labels)
 
       train_op = None
@@ -367,15 +405,9 @@ class Seq2SeqModel(ModelBase):
           features=features,
           labels=labels,
           losses=losses)
-    
-      filter_sizes="3,4,5"
-      cnn = TextCNN(sequence_length=73,
-                num_classes=2,
-                vocab_size=35881,
-                embedding_size=128,
-                filter_sizes=list(map(int,filter_sizes.split(","))),
-                num_filters=128,
-                l2_reg_lambda=0.0) 
+
+#      tf.reset_default_graph()
+#      _ , _ = infer_classifier(preds)
 
 
     # We add "useful" tensors to the graph collection so that we

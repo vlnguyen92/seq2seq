@@ -23,7 +23,9 @@ import tensorflow as tf
 
 from seq2seq.configurable import Configurable
 from seq2seq.training import utils as training_utils
+from seq2seq.extra.text_cnn import TextCNN
 from seq2seq import global_vars
+import pdb
 
 
 def _flatten_dict(dict_, parent_key="", sep="."):
@@ -66,6 +68,7 @@ class ModelBase(Configurable):
 
   def _clip_gradients(self, grads_and_vars):
     """Clips gradients by global norm."""
+#    pdb.set_trace()
     gradients, variables = zip(*grads_and_vars)
     clipped_gradients, _ = tf.clip_by_global_norm(
         gradients, self.params["optimizer.clip_gradients"])
@@ -141,6 +144,15 @@ class ModelBase(Configurable):
     """Creates the model graph. See the model_fn documentation in
     tf.contrib.learn.Estimator class for a more detailed explanation.
     """
+#    filter_sizes="3,4,5"
+#    cnn = TextCNN(sequence_length=73,
+#              num_classes=2,
+#              vocab_size=35881,
+#              embedding_size=128,
+#              filter_sizes=list(map(int,filter_sizes.split(","))),
+#              num_filters=128,
+#              l2_reg_lambda=0.0) 
+
     with tf.variable_scope("model"):
       with tf.variable_scope(self.name):
         return self._build(features, labels, params)
