@@ -26,7 +26,7 @@ export TRAIN_STEPS=10
 export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity_adv
 mkdir -p $MODEL_DIR
 
-python -m bin/train \
+python -m bin/train_GAN \
   --config_paths="
       ./example_configs/nmt_small.yml,
       ./example_configs/train_seq2seq.yml,

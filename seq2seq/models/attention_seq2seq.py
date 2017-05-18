@@ -40,6 +40,9 @@ class AttentionSeq2Seq(BasicSeq2Seq):
   """
 
   def __init__(self, params, mode, name="att_seq2seq"):
+    print ("HEREHERHERHEHREHRHERHERHRHEHREHR")
+    print (params)
+    print (mode)
     super(AttentionSeq2Seq, self).__init__(params, mode, name)
 
   @staticmethod
