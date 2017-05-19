@@ -138,6 +138,10 @@ def translate(sentence):
 #        print word,id
     print (" ".join(sentence_str))
 
+def translate_sentences(sentences,fp):
+    for sentence in sentences:
+        fp.write(translate(sentence))
+
 def get_vars_from_scope(scope):
     vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope=scope)
     names = list(v.name for v in vars)
@@ -231,10 +235,10 @@ def create_experiment(output_dir):
                                                              dtype=tf.int32))
   input_y = tf.concat([tf.zeros([128,1]),tf.ones([128,1])],axis=1)
 
-  real_scores, real_labels = cnn.inference(reconstructed_sentences)
+  real_scores, real_labels = cnn.inference(input_sentences)
   real_acc = cnn.accuracy(real_labels,input_y)
 #  tf.get_variable_scope().reuse_variables()
-  fake_scores, fake_labels = cnn1.inference(input_sentences)
+  fake_scores, fake_labels = cnn1.inference(reconstructed_sentences)
   fake_acc = cnn.accuracy(fake_labels,input_y)
 
 #  pdb.set_trace()
@@ -242,7 +246,7 @@ def create_experiment(output_dir):
           logits=tf.cast(tf.argmax(fake_scores,axis=1),dtype=tf.float64), \
           labels=tf.cast(real_labels,dtype=tf.float64))
 
-  distance_loss = tf.multiply(tf.reduce_mean(losses),1.0)
+  distance_loss = tf.multiply(tf.reduce_mean(losses),0.001)
 
 #  pdb.set_trace()
   total_loss = tf.cast(distance_loss,tf.float32) + loss_
@@ -276,7 +280,7 @@ def create_experiment(output_dir):
   ae_saved_model = tf.train.get_checkpoint_state(output_dir)
 
   classifier_dir = '../../text_autoencoder/autoencoder/runs/1495150345/checkpoints'
-  classifier_dir_1 = '../../text_autoencoder/autoencoder/runs/1495166749/checkpoints'
+  classifier_dir_1 = '../../text_autoencoder/autoencoder/runs/1495168409/checkpoints'
   classifier_vars, _ = get_vars_from_scope(scope='TextCNN')
   classifier_vars_1, _ = get_vars_from_scope(scope='classifierCNN')
   print ([v.name for v in classifier_vars])
@@ -288,6 +292,8 @@ def create_experiment(output_dir):
   classifier_saver_1 = tf.train.Saver(var_list = classifier_vars_1)
   classifier_saved_model_1 = tf.train.get_checkpoint_state(classifier_dir_1)
 
+  fp = open('output_2000.txt','w')
+
   with tf.Session() as sess:
     sess.run(tf.tables_initializer())
     ae_saver.restore(sess,ae_saved_model.model_checkpoint_path)
@@ -295,10 +301,15 @@ def create_experiment(output_dir):
     classifier_saver_1.restore(sess,classifier_saved_model_1.model_checkpoint_path)
 
     with tf.contrib.slim.queues.QueueRunners(sess):
-        for _ in range(10):
+        for step in range(2000):
 #            data = sess.run(predictions_['features.source_ids'])
-            _, d_loss, r, f = sess.run([train_op,total_loss,real_acc,fake_acc])
-            print ("Loss: {:.2f}, real: {:.2f}, fake: {:.2f}".format(d_loss,r,f))
+            _, d_loss, r, f, sentences = sess.run([train_op,total_loss,real_acc,fake_acc,reconstructed_sentences])
+            line = ("Step {} loss: {:.2f}, real: {:.2f}, fake: {:.2f}\n".format(step,d_loss,r,f))
+            print (line)
+            translate_sentences(sentences,fp)
+            fp.write(line)
+        fp.close()
+
 #            print (translate(data[0]))
 #            data = preds['features.source_ids']
 #            print (preds['features.source_tokens'][0])
@@ -365,3 +376,4 @@ def main(_argv):
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run()
+
