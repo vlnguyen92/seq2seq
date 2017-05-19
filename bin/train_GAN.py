@@ -231,7 +231,6 @@ def create_experiment(output_dir):
 
   features, labels = train_input_fn()
 
-
   filter_sizes="3,4,5"
   cnn = TextCNN(sequence_length=73,
             num_classes=2,
@@ -245,7 +244,10 @@ def create_experiment(output_dir):
   predictions_, loss_, train_op_ = fetches
 
   reconstructed_sentences = pad_sentence(predictions_['predicted_ids'])
+  input_y = tf.concat(tf.zeros([128,1]),tf.ones([128,1]),axis=1)
 
+  scores, predictions = cnn.inference(reconstructed_sentences)
+  classifier_loss = cnn.loss(scores,input_y)
 
   #######################Add another loss term#####################
   #_, real_labels = infer_classifier(cnn,session,
@@ -273,7 +275,7 @@ def create_experiment(output_dir):
   saver = tf.train.Saver(var_list = vars)
   saved_model = tf.train.get_checkpoint_state(output_dir)
 
-  classifier_dir = '../../text_autoencoder/autoencoder/runs/1495141268/checkpoints'
+  classifier_dir = '../../text_autoencoder/autoencoder/runs/1495150345/checkpoints'
 
   with tf.Session() as sess:
     sess.run(tf.tables_initializer())
@@ -286,7 +288,7 @@ def create_experiment(output_dir):
 #            print (translate(data[0]))
 #            data = preds['features.source_ids']
 #            print (preds['features.source_tokens'][0])
-            print (infer_classifier(cnn,sess,data,classifier_dir))
+            print (infer_classifier(cnn,sess,data,classifier_dir,128))
 #      print (len(out))
 #      print (type(loss_),type(predictions_))
 
