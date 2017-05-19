@@ -150,33 +150,6 @@ def pad_sentence(input_tensor):
     return tf.concat([input_tensor,padded_vals],
                                       axis=1)
 
-
-def infer_classifier(cnn,session,data,checkpoint_dir,batch_size=100):
-    vars, names = get_vars_from_scope(cnn.__class__.__name__)
-    saved_classifier = tf.train.get_checkpoint_state(checkpoint_dir)
-    saver_classifier = tf.train.Saver(var_list=vars)
-#    pdb.set_trace()
-    saver_classifier.restore(session, saved_classifier.model_checkpoint_path)
-
-    #Placeholders
-    input_x = cnn.input_x#graph.get_operation_by_name("input_x").outputs[0]
-
-    dropout_keep_prob = cnn.dropout_keep_prob#graph.get_operation_by_name("dropout_keep_prob").outputs[0]
-
-    #logits 
-    text_scores = cnn.scores 
-    preds_inverse = tf.reshape(tf.argmin(text_scores,
-        1,name='inverse_predictions'),[batch_size,1])
-    cnn_preds = tf.reshape(cnn.predictions,[batch_size,1])
-
-    preds = tf.concat([preds_inverse,cnn_preds],1)
-
-    scores, preds = session.run([text_scores, preds], 
-            {input_x: data, dropout_keep_prob: 1.0})
-
-    return scores, preds 
-
-
 def create_model(mode, params=None):
     params_ = AttentionSeq2Seq.default_params().copy()
     params_.update(params or {})
@@ -240,14 +213,41 @@ def create_experiment(output_dir):
             num_filters=128,
             l2_reg_lambda=0.0) 
 
+  cnn1 = TextCNN(sequence_length=73,
+            num_classes=2,
+            vocab_size=35883,
+            embedding_size=128,
+            filter_sizes=list(map(int,filter_sizes.split(","))),
+            num_filters=128,
+            l2_reg_lambda=0.0,
+            name_scope='classifierCNN') 
+
+
   fetches = model(features,labels,None)
   predictions_, loss_, train_op_ = fetches
 
   reconstructed_sentences = pad_sentence(predictions_['predicted_ids'])
-  input_y = tf.concat(tf.zeros([128,1]),tf.ones([128,1]),axis=1)
+  input_sentences = pad_sentence(tf.cast(predictions_['features.source_ids'],
+                                                             dtype=tf.int32))
+  input_y = tf.concat([tf.zeros([128,1]),tf.ones([128,1])],axis=1)
 
-  scores, predictions = cnn.inference(reconstructed_sentences)
-  classifier_loss = cnn.loss(scores,input_y)
+  real_scores, real_labels = cnn.inference(reconstructed_sentences)
+  real_acc = cnn.accuracy(real_labels,input_y)
+#  tf.get_variable_scope().reuse_variables()
+  fake_scores, fake_labels = cnn1.inference(input_sentences)
+  fake_acc = cnn.accuracy(fake_labels,input_y)
+
+#  pdb.set_trace()
+  losses = tf.nn.softmax_cross_entropy_with_logits( \
+          logits=tf.cast(tf.argmax(fake_scores,axis=1),dtype=tf.float64), \
+          labels=tf.cast(real_labels,dtype=tf.float64))
+
+  distance_loss = tf.multiply(tf.reduce_mean(losses),1.0)
+
+#  pdb.set_trace()
+  total_loss = tf.cast(distance_loss,tf.float32) + loss_
+
+  train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(total_loss)
 
   #######################Add another loss term#####################
   #_, real_labels = infer_classifier(cnn,session,
@@ -270,25 +270,39 @@ def create_experiment(output_dir):
   #train_op = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
   ################################################################
 
-  vars, _ = get_vars_from_scope(scope='model')
+  ae_vars, _ = get_vars_from_scope(scope='model')
 
-  saver = tf.train.Saver(var_list = vars)
-  saved_model = tf.train.get_checkpoint_state(output_dir)
+  ae_saver = tf.train.Saver(var_list = ae_vars)
+  ae_saved_model = tf.train.get_checkpoint_state(output_dir)
 
   classifier_dir = '../../text_autoencoder/autoencoder/runs/1495150345/checkpoints'
+  classifier_dir_1 = '../../text_autoencoder/autoencoder/runs/1495166749/checkpoints'
+  classifier_vars, _ = get_vars_from_scope(scope='TextCNN')
+  classifier_vars_1, _ = get_vars_from_scope(scope='classifierCNN')
+  print ([v.name for v in classifier_vars])
+  print ([v.name for v in classifier_vars_1])
+
+  classifier_saver = tf.train.Saver(var_list = classifier_vars)
+  classifier_saved_model = tf.train.get_checkpoint_state(classifier_dir)
+
+  classifier_saver_1 = tf.train.Saver(var_list = classifier_vars_1)
+  classifier_saved_model_1 = tf.train.get_checkpoint_state(classifier_dir_1)
 
   with tf.Session() as sess:
     sess.run(tf.tables_initializer())
-    saver.restore(sess,saved_model.model_checkpoint_path)
+    ae_saver.restore(sess,ae_saved_model.model_checkpoint_path)
+    classifier_saver.restore(sess,classifier_saved_model.model_checkpoint_path)
+    classifier_saver_1.restore(sess,classifier_saved_model_1.model_checkpoint_path)
+
     with tf.contrib.slim.queues.QueueRunners(sess):
         for _ in range(10):
 #            data = sess.run(predictions_['features.source_ids'])
-            data = sess.run(reconstructed_sentences)
-            print (data.shape)
+            _, d_loss, r, f = sess.run([train_op,total_loss,real_acc,fake_acc])
+            print ("Loss: {:.2f}, real: {:.2f}, fake: {:.2f}".format(d_loss,r,f))
 #            print (translate(data[0]))
 #            data = preds['features.source_ids']
 #            print (preds['features.source_tokens'][0])
-            print (infer_classifier(cnn,sess,data,classifier_dir,128))
+#            print (infer_classifier(cnn,sess,data,classifier_dir,128))
 #      print (len(out))
 #      print (type(loss_),type(predictions_))
 
@@ -347,11 +361,6 @@ def main(_argv):
       model_params=FLAGS.model_params)
 
   create_experiment(FLAGS.output_dir)
-
-#  vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-#  names = list(v.name for v in vars)
-#  print ("ALL_VARIABLES")
-#  print (names)
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)

@@ -33,54 +33,6 @@ from seq2seq.decoders.beam_search_decoder import BeamSearchDecoder
 from seq2seq.inference import beam_search
 from seq2seq.models.model_base import ModelBase, _flatten_dict
 
-def infer_classifier(data,batch_size=128):
-    checkpoint_dir = './runs/trained_classifier'
-    graph = tf.Graph()
-
-    filter_sizes="3,4,5"
-    cnn = TextCNN(sequence_length=73,
-                num_classes=2,
-                vocab_size=35881,
-                embedding_size=128,
-                filter_sizes=list(map(int,filter_sizes.split(","))),
-                num_filters=128,
-                l2_reg_lambda=0.0) 
-
-    vars, names = get_vars_from_scope(cnn.__class__.__name__)
-#    print names
-#    all_variables = list_variables(checkpoint_dir)
-#    var_list = [var[0] for var in all_variables]
-    saved_classifier = tf.train.get_checkpoint_state(checkpoint_dir)
-#    checkpoint_file = tf.train.latest_checkpoint(checkpoint_dir)
-    saver_classifier = tf.train.Saver(var_list=vars)
-#    saver_classifier = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
-    saver_classifier.restore(session, saved_classifier.model_checkpoint_path)
-
-    #Placeholders
-    input_x = cnn.input_x#graph.get_operation_by_name("input_x").outputs[0]
-
-    dropout_keep_prob = cnn.dropout_keep_prob#graph.get_operation_by_name("dropout_keep_prob").outputs[0]
-
-    #logits 
-#    print data.shape
-    text_scores = cnn.scores #graph.get_operation_by_name("output/scores").outputs[0]
-#    preds = cnn.predictions #graph.get_operation_by_name("output/predictions").outputs[0]
-    preds_inverse = tf.reshape(tf.argmin(text_scores,
-        1,name='inverse_predictions'),[batch_size,1])
-
-    cnn_preds = tf.reshape(cnn.predictions,[batch_size,1])
-
-#    print preds_inverse.get_shape()
-#    print cnn_preds.get_shape()
-    preds = tf.concat([preds_inverse,cnn_preds],1)
-
-    scores, preds = session.run([text_scores, preds], 
-            {input_x: data, dropout_keep_prob: 1.0})
-    sess.close()
-
-    return scores, preds 
-
-
 class Seq2SeqModel(ModelBase):
   """Base class for seq2seq models with embeddings
   """
@@ -336,40 +288,11 @@ class Seq2SeqModel(ModelBase):
     Returns a tuple `(losses, loss)`, where `losses` are the per-batch
     losses and loss is a single scalar tensor to minimize.
     """
-#    dummy = tf.Variable(tf.truncated_normal([1,2,3]))
-#    filter_sizes="3,4,5"
-#    cnn = TextCNN(sequence_length=73,
-#              num_classes=2,
-#              vocab_size=35881,
-#              embedding_size=128,
-#              filter_sizes=list(map(int,filter_sizes.split(","))),
-#              num_filters=128,
-#              l2_reg_lambda=0.0) 
-
-#    saver = tf.train.import_meta_graph('./runs/trained_classifier/checkpoints/model-33400.meta')
-
-    #pylint: disable=R0201
     # Calculate loss per example-timestep of shape [B, T]
     losses = seq2seq_losses.cross_entropy_sequence_loss(
         logits=decoder_output.logits[:, :, :],
         targets=tf.transpose(labels["target_ids"][:, 1:], [1, 0]),
         sequence_length=labels["target_len"] - 1)
-
-    #######################Add another loss term#####################
-    #_, real_labels = infer_classifier(cnn,session,
-    #        batch_data_padded,classifier_dir)
-
-    #reconstructed_sentences = session.run(model.decoder_prediction_train, fd)
-    #reconstructed_sentences_padded = np.zeros(batch_data_padded.shape)
-    #reconstructed_sentences_padded[:reconstructed_sentences.T.shape[0],
-    #        :reconstructed_sentences.T.shape[1]]
-    #reconstructed_scores, fake_labels = infer_classifier(cnn,
-    #        session, reconstructed_sentences_padded, classifier_dir)
-
-    #losses = tf.nn.softmax_cross_entropy_with_logits(logits=reconstructed_scores,
-    #        labels = real_labels)
-    #distance_loss = tf.multiply(tf.reduce_mean(losses),10)
-    #################################################################
 
     # Calculate the average log perplexity
     loss = tf.reduce_sum(losses) / tf.to_float(
