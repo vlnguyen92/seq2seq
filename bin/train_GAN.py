@@ -30,6 +30,7 @@ import json
 import tensorflow as tf
 import numpy as np
 import pdb
+from seq2seq.metrics import bleu
 from tensorflow.contrib.learn.python.learn import learn_runner
 from tensorflow.contrib.learn.python.learn.estimators import run_config
 from seq2seq.extra.text_cnn import TextCNN
@@ -138,9 +139,11 @@ def translate(sentence):
 #        print word,id
     print (" ".join(sentence_str))
 
-def translate_sentences(sentences,fp):
-    for sentence in sentences:
-        fp.write(translate(sentence))
+def translate_sentences(sentences):
+    all_sentences=[]
+    for sentence in sentences[:5]:
+        all_sentences.append(" ".join(sentence))
+    return all_sentences
 
 def get_vars_from_scope(scope):
     vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope=scope)
@@ -292,7 +295,7 @@ def create_experiment(output_dir):
   classifier_saver_1 = tf.train.Saver(var_list = classifier_vars_1)
   classifier_saved_model_1 = tf.train.get_checkpoint_state(classifier_dir_1)
 
-  fp = open('output_2000.txt','w')
+#  fp = open('output_2000.txt','w')
 
   with tf.Session() as sess:
     sess.run(tf.tables_initializer())
@@ -303,12 +306,24 @@ def create_experiment(output_dir):
     with tf.contrib.slim.queues.QueueRunners(sess):
         for step in range(2000):
 #            data = sess.run(predictions_['features.source_ids'])
-            _, d_loss, r, f, sentences = sess.run([train_op,total_loss,real_acc,fake_acc,reconstructed_sentences])
-            line = ("Step {} loss: {:.2f}, real: {:.2f}, fake: {:.2f}\n".format(step,d_loss,r,f))
+            _, d_loss, r, f, h, ref = sess.run([train_op,total_loss,
+                                                real_acc,fake_acc,
+                                                predictions_['predicted_tokens'],
+                                                predictions_['features.source_tokens']])
+            print (h[0])
+            print (ref[0])
+            print ("----------------------------------")
+#            hs = translate_sentences(h[:5])
+#            refs = translate_sentences(ref[:5])
+#            bleu_score = bleu.moses_multi_bleu(hypotheses=hs, references=refs)
+#            line = ("loss: {:.2f}, real: {:.2f}, fake: {:.2f}, bleu: \
+#                    {:.2f}\n".format(step,d_loss,r,f,bleu_score))
+            line = ("loss: {:.2f}, real: {:.2f}, fake: {:.2f} \n".format(step,d_loss,r,f))
             print (line)
-            translate_sentences(sentences,fp)
-            fp.write(line)
-        fp.close()
+#            print (h[:5])
+#            print (ref[:5])
+#            fp.write(line)
+#        fp.close()
 
 #            print (translate(data[0]))
 #            data = preds['features.source_ids']

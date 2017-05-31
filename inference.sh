@@ -9,8 +9,8 @@ export VOCAB_TARGET=${DATA_PATH}/vocab.bpe.32000
 export TRAIN_SOURCES=${DATA_PATH}/train.tok.clean.bpe.32000.en
 export TRAIN_TARGETS=${DATA_PATH}/train.tok.clean.bpe.32000.en
 #export DEV_SOURCES=${DATA_PATH}/newstest2013.tok.bpe.32000.en
-export DEV_SOURCES=${DATA_PATH}/test.tok.bpe.32000.en
-export DEV_TARGETS=${DATA_PATH}/test.tok.bpe.32000.en
+export DEV_SOURCES=${DATA_PATH}/test.tok.clean.bpe.32000.en
+export DEV_TARGETS=${DATA_PATH}/test.tok.clean.bpe.32000.en
 
 export DEV_TARGETS_REF=${DATA_PATH}/test.tok.en
 
