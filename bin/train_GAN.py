@@ -282,8 +282,8 @@ def create_experiment(output_dir):
   ae_saver = tf.train.Saver(var_list = ae_vars)
   ae_saved_model = tf.train.get_checkpoint_state(output_dir)
 
-  classifier_dir = '../../text_autoencoder/autoencoder/runs/1495150345/checkpoints'
-  classifier_dir_1 = '../../text_autoencoder/autoencoder/runs/1495168409/checkpoints'
+  classifier_dir = '../../text_autoencoder/autoencoder/runs/1497085807/checkpoints'
+  classifier_dir_1 = '../../text_autoencoder/autoencoder/runs/1497090196/checkpoints'
   classifier_vars, _ = get_vars_from_scope(scope='TextCNN')
   classifier_vars_1, _ = get_vars_from_scope(scope='classifierCNN')
   print ([v.name for v in classifier_vars])

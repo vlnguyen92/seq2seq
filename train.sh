@@ -21,10 +21,12 @@ export DEV_SOURCES=${DATA_PATH}/test.tok.bpe.32000.en
 export DEV_TARGETS=${DATA_PATH}/test.tok.bpe.32000.en
 
 export DEV_TARGETS_REF=${DATA_PATH}/test.tok.en
-export TRAIN_STEPS=10
+export TRAIN_STEPS=1000
 
 export MODEL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity_adv
-mkdir -p $MODEL_DIR
+export FULL_DIR=${TMPDIR:-$ROOT_DIR/trained_models_full}/polarity_full
+rm -rf $MODEL_DIR
+cp -r $FULL_DIR $MODEL_DIR
 
 python -m bin/train_GAN \
   --config_paths="

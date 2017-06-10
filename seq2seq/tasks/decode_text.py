@@ -21,6 +21,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import functools
+import pdb
 from pydoc import locate
 
 import numpy as np
@@ -188,6 +189,7 @@ class DecodeText(InferenceTask):
       with open('../autoencoder/processed_data/inv_vocab.json','r') as fp:
         vocab = json.load(fp)
 
+#      pdb.set_trace()
       ids = [vocab[token] for token in predicted_tokens if token != 'SEQUENCE_END']
-      print (ids)
-#      print(sent.encode('utf-8'))
+#      print (ids)
+      print(sent.encode('utf-8'))
